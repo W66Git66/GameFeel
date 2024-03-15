@@ -10,6 +10,10 @@ namespace TarodevController
         [Header("References")] [SerializeField]
         private Animator _anim;
 
+        public RuntimeAnimatorController _fire;
+
+        public RuntimeAnimatorController _tree;
+
         [SerializeField] private SpriteRenderer _sprite;
 
         [Header("Settings")] [SerializeField, Range(1f, 3f)]
@@ -31,6 +35,7 @@ namespace TarodevController
         private bool _grounded;
         private ParticleSystem.MinMaxGradient _currentGradient;
 
+
         private void Awake()
         {
             _source = GetComponent<AudioSource>();
@@ -43,6 +48,9 @@ namespace TarodevController
             _player.GroundedChanged += OnGroundedChanged;
 
             _moveParticles.Play();
+
+            EventSystem.OnTransToFire += TransToFire;
+            EventSystem.OnTransToTree += TransToTree;
         }
 
         private void OnDisable()
@@ -51,6 +59,9 @@ namespace TarodevController
             _player.GroundedChanged -= OnGroundedChanged;
 
             _moveParticles.Stop();
+
+            EventSystem.OnTransToFire -= TransToFire;
+            EventSystem.OnTransToTree -= TransToTree;
         }
 
         private void Update()
@@ -66,9 +77,9 @@ namespace TarodevController
             HandleCharacterTilt();
         }
 
-        private void HandleSpriteFlip()
+        private void HandleSpriteFlip()//转身
         {
-            if (_player.FrameInput.x != 0) _sprite.flipX = _player.FrameInput.x < 0;
+            if (_player.FrameInput.x != 0)  _sprite.flipX = _player.FrameInput.x < 0;
         }
 
         private void HandleIdleSpeed()
@@ -80,7 +91,9 @@ namespace TarodevController
 
         private void HandleCharacterTilt()
         {
+            
             var runningTilt = _grounded ? Quaternion.Euler(0, 0, _maxTilt * _player.FrameInput.x) : Quaternion.identity;
+            _anim.SetFloat("isRun", Mathf.Abs(_player.FrameInput.x));//播放移动动画
             _anim.transform.up = Vector3.RotateTowards(_anim.transform.up, runningTilt * Vector2.up, _tiltSpeed * Time.deltaTime, 0f);
         }
 
@@ -134,6 +147,18 @@ namespace TarodevController
         {
             var main = ps.main;
             main.startColor = _currentGradient;
+        }
+
+        public void TransToFire()
+        {
+            _anim.runtimeAnimatorController = _fire;
+            _anim.SetTrigger("Translate");
+        }
+
+        public void TransToTree()
+        {
+            _anim.runtimeAnimatorController = _tree;
+            _anim.SetTrigger("Translate");
         }
 
         private static readonly int GroundedKey = Animator.StringToHash("Grounded");
